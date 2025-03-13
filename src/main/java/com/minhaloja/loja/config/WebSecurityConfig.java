@@ -21,28 +21,36 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class WebSecurityConfig {
 
-    @Bean
-    public UserDetailsService userDetailsService(AuthUserService authUserService) {
-        return authUserService;
-    }
-
+    // Define a cadeia de filtros que o Spring Security aplicará para proteger as rotas da aplicação.
+    // As regras de segurança especificam quais rotas precisam de autenticação e quais são públicas (permitidas sem autenticação).
+    // Neste caso, a rota "/health" está acessível sem autenticação (permitAll),
+    // enquanto qualquer outra rota (anyRequest()) exigirá autenticação (authenticated).
+    // Também é configurado o uso da autenticação básica HTTP (httpBasic) para a aplicação.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/health").permitAll() // Permite acesso à rota "/health" sem autenticação
+                        .anyRequest().authenticated()           // Exige autenticação para todas as outras rotas
                 )
-                .httpBasic(Customizer.withDefaults());
+                .httpBasic(Customizer.withDefaults());          // Configura autenticação básica HTTP para a aplicação
 
         return http.build();
     }
 
+    // Define o AuthenticationManager, que será responsável pela autenticação de usuários na aplicação.
+    // O AuthenticationManager usa o AuthenticationManagerBuilder para configurar como a autenticação será realizada.
+    // Como o Spring Security usa o UserDetailsService para carregar informações sobre os usuários, aqui estamos passando
+    // a nossa implementação personalizada (AuthUserService), que já implementa o UserDetailsService.
+    // Não é necessário utilizar uma implementação padrão, pois a AuthUserService já fornece a lógica para carregar o usuário.
+    // Também é configurado o PasswordEncoder (BCryptPasswordEncoder) para garantir que a senha seja validada corretamente.
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http, AuthUserService authUserService) throws Exception {
+
         AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
         authenticationManagerBuilder.userDetailsService(authUserService)
                 .passwordEncoder(passwordEncoder());
+
         return authenticationManagerBuilder.build();
     }
 
