@@ -4,10 +4,13 @@ import com.minhaloja.loja.service.AuthUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,10 +28,12 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health").permitAll() // Permite acesso à rota "/health" sem autenticação
-                        .anyRequest().authenticated()           // Exige autenticação para todas as outras rotas
+                        .requestMatchers("/auth/login", "/health").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults());          // Configura autenticação básica HTTP para a aplicação
+                .csrf(csrf -> csrf.disable()) // Desativando CSRF para facilitar testes
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
@@ -40,13 +45,12 @@ public class WebSecurityConfig {
     // Não é necessário utilizar uma implementação padrão, pois a AuthUserService já fornece a lógica para carregar o usuário.
     // Também é configurado o PasswordEncoder (BCryptPasswordEncoder) para garantir que a senha seja validada corretamente.
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http, AuthUserService authUserService) throws Exception {
+    public AuthenticationManager authenticationManager(AuthUserService authUserService, PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(authUserService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder);
 
-        AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder.userDetailsService(authUserService)
-                .passwordEncoder(passwordEncoder());
-
-        return authenticationManagerBuilder.build();
+        return new ProviderManager(authenticationProvider);
     }
 
     @Bean
