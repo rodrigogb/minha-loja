@@ -1,57 +1,74 @@
 package com.minhaloja.loja.config;
 
-import com.minhaloja.loja.service.AuthUserService;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
+    // Não utilizamos o AuthenticationManager com o UserDetailsService,  pois eles não são necessários para JWT!
+
+    @Value("${jwt.public.key}")
+    private RSAPublicKey publicKey;
+
+    @Value("${jwt.private.key}")
+    private RSAPrivateKey privateKey;
 
     // Define a cadeia de filtros que o Spring Security aplicará para proteger as rotas da aplicação.
-    // As regras de segurança especificam quais rotas precisam de autenticação e quais são públicas (permitidas sem autenticação).
-    // Neste caso, a rota "/health" está acessível sem autenticação (permitAll),
-    // enquanto qualquer outra rota (anyRequest()) exigirá autenticação (authenticated).
-    // Também é configurado o uso da autenticação básica HTTP (httpBasic) para a aplicação.
+    // Define as regras gerais que serão aplicadas
+    // É executado ao iniciar o projeto, para definir as regras. Não é chamado a cada requisição!
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health").permitAll() // Permite acesso à rota "/health" sem autenticação
-                        .anyRequest().authenticated()           // Exige autenticação para todas as outras rotas
-                )
-                .httpBasic(Customizer.withDefaults());          // Configura autenticação básica HTTP para a aplicação
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.GET, "/health").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/login").permitAll()
+                        .anyRequest().authenticated())
+                .csrf(csrf -> csrf.disable())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
 
-    // Define o AuthenticationManager, que será responsável pela autenticação de usuários na aplicação.
-    // O AuthenticationManager usa o AuthenticationManagerBuilder para configurar como a autenticação será realizada.
-    // Como o Spring Security usa o UserDetailsService para carregar informações sobre os usuários, aqui estamos passando
-    // a nossa implementação personalizada (AuthUserService), que já implementa o UserDetailsService.
-    // Não é necessário utilizar uma implementação padrão, pois a AuthUserService já fornece a lógica para carregar o usuário.
-    // Também é configurado o PasswordEncoder (BCryptPasswordEncoder) para garantir que a senha seja validada corretamente.
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http, AuthUserService authUserService) throws Exception {
-
-        AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder.userDetailsService(authUserService)
-                .passwordEncoder(passwordEncoder());
-
-        return authenticationManagerBuilder.build();
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withPublicKey(publicKey).build();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public JwtEncoder jwtEncoder() {
+        JWK jwk = new RSAKey.Builder(this.publicKey).privateKey(privateKey).build();
+        var jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
+
+        return new NimbusJwtEncoder(jwks);
+    }
+
+    public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+
+
 }
 
