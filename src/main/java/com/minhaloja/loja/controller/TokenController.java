@@ -2,7 +2,7 @@ package com.minhaloja.loja.controller;
 
 import com.minhaloja.loja.controller.dto.LoginRequest;
 import com.minhaloja.loja.controller.dto.LoginResponse;
-import com.minhaloja.loja.model.User;
+import com.minhaloja.loja.model.Usuario;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -28,7 +28,7 @@ public class TokenController {
         if (!loginRequest.username().equals("rodrigo") || !loginRequest.password().equals("123")) {
             throw new BadCredentialsException("usuario ou senha invalidos");
         }
-        User user = new User();
+        Usuario user = new Usuario();
         user.setUserId(1L);
         user.setUsername("rodrigo");
         user.setPassword("123");
@@ -39,7 +39,7 @@ public class TokenController {
 
         var claims = JwtClaimsSet.builder()
                 .issuer("loja")
-                .subject(user.getUserId().toString())
+                .subject(user.getUsername())
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(expiresIn))
                 .build();

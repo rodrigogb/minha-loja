@@ -1,6 +1,6 @@
 package com.minhaloja.loja.model;
 
-public class User {
+public class Usuario {
 
     private Long userId;
     private String username;
