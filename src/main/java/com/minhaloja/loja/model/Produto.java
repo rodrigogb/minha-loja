@@ -1,12 +1,24 @@
 package com.minhaloja.loja.model;
 
-import java.math.BigDecimal;
+import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+import java.util.List;
+
+@Entity
+@Table(name="tb_produto")
 public class Produto {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long produtoId;
+
     private String nome;
     private String descricao;
     private BigDecimal valorUnitario;
+
+    @OneToMany(mappedBy = "produto") 
+    private List<PedidoProduto> pedidoProdutos;
 
     public Long getProdutoId() {
         return produtoId;
@@ -38,5 +50,13 @@ public class Produto {
 
     public void setValorUnitario(BigDecimal valorUnitario) {
         this.valorUnitario = valorUnitario;
+    }
+
+    public List<PedidoProduto> getPedidoProdutos() {
+        return pedidoProdutos;
+    }
+
+    public void setPedidoProdutos(List<PedidoProduto> pedidoProdutos) {
+        this.pedidoProdutos = pedidoProdutos;
     }
 }
