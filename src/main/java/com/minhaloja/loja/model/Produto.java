@@ -17,7 +17,7 @@ public class Produto {
     private String descricao;
     private BigDecimal valorUnitario;
 
-    @OneToMany(mappedBy = "produto") 
+    @OneToMany(mappedBy = "produto")
     private List<PedidoProduto> pedidoProdutos;
 
     public Long getProdutoId() {
