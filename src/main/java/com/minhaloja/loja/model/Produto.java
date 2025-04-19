@@ -1,5 +1,6 @@
 package com.minhaloja.loja.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ public class Produto {
     private BigDecimal valorUnitario;
 
     @OneToMany(mappedBy = "produto")
+    @JsonIgnore
     private List<PedidoProduto> pedidoProdutos;
 
     public Long getProdutoId() {

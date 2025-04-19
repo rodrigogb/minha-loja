@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -35,6 +36,14 @@ public class ProdutoController {
         if (!"rodrigo".equals(nomeUsuario)) {
             return ResponseEntity.badRequest().build();
         }
+
+        Produto produto = new Produto();
+        produto.setNome(dto.nome());
+        produto.setDescricao(dto.descricao());
+        produto.setValorUnitario(dto.valorUnitario());
+
+        produto = produtoService.incluirProduto(produto);
+
 
         return ResponseEntity.ok().build();
 
